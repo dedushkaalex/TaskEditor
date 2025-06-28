@@ -1,18 +1,32 @@
-import { Editor as MonacoEditor } from "@monaco-editor/react";
+import { useMemo } from "react";
 
-export const Editor = () => {
+import { type EditorProps, Editor as MonacoEditor } from "@monaco-editor/react";
+
+import { DEFAULT_OPTIONS } from "./config/settings";
+import { useEditor } from "./settings-store";
+
+export const Editor = ({ options, value, onChange, ...props }: EditorProps) => {
+  const settings = useEditor((state) => state.settings);
+
+  const editorOptions = useMemo(
+    () => ({
+      ...DEFAULT_OPTIONS,
+      ...options,
+    }),
+    [options],
+  );
+
   return (
     <MonacoEditor
-      language={""}
-      // options={{
-      //   ...editorOptions,
-      //   fontSize: settings.fontSize,
-      //   tabSize: settings.tabSize
-      // }}
-      // value={value}
-      // onChange={onChange}
-      // theme={theme}
-      // onMount={handleOnMount}
+      language={settings.language.value}
+      {...props}
+      options={{
+        ...editorOptions,
+        automaticLayout: true,
+      }}
+      value={value}
+      onChange={onChange}
+      theme={settings.theme.value}
     />
   );
 };
