@@ -1,19 +1,19 @@
-import { type Ref, useState } from "react";
+import { type Ref } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 
 import clsx from "clsx";
-import { Check, Copy } from "lucide-react";
+import type { Html, Root } from "mdast";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import type { Plugin } from "unified";
 import { SKIP, visit } from "unist-util-visit";
+import type { Visitor } from "unist-util-visit";
 
 import { userMentions } from "@/shared/lib/mentions";
 
-import { Button } from "../kit/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../kit/tooltip";
+import { CopyButton } from "../kit/copy-button";
 import { vscDarkPlus } from "./themes/vs-dark-plus";
 
 const HTML_COMMENT_REGEX = new RegExp("<!--([\\s\\S]*?)-->", "g");
@@ -21,12 +21,9 @@ const HTML_COMMENT_REGEX = new RegExp("<!--([\\s\\S]*?)-->", "g");
 /**
  * Remove HTML comments from Markdown
  */
-function removeHtmlComments(): Plugin {
-  //@ts-ignore
-  return (tree: any) => {
-    // TODO: PRs are welcomed to fix the any type
-    //@ts-ignore
-    const handler = (node, index, parent) => {
+function removeHtmlComments(): Plugin<[Root], Root> {
+  return (tree: Root) => {
+    const handler: Visitor<Html> = (node, index, parent) => {
       const isComment = node.value.match(HTML_COMMENT_REGEX);
 
       if (isComment && typeof index === "number" && parent && Array.isArray(parent.children)) {
@@ -34,11 +31,8 @@ function removeHtmlComments(): Plugin {
         return [SKIP, index];
       }
     };
-    //@ts-ignore
     visit(tree, "html", handler);
 
-    // TODO: is this needed
-    //@ts-ignore
     visit(tree, "jsx", handler);
   };
 }
@@ -82,10 +76,7 @@ export function Markdown({
               {!disableCopy ? <CopyButton text={String(children).replace(/\n$/, "")} /> : null}
               <SyntaxHighlighter
                 ref={ref as Ref<SyntaxHighlighter> | undefined}
-                // TODO: react-syntax-highlighter is not react 19 compatible yet.
-                // ref: https://github.com/react-syntax-highlighter/react-syntax-highlighter/issues/581
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                PreTag={"section" as any} // parent tag
+                PreTag={"section"} // parent tag
                 className={clsx(className, "rounded-xl dark:rounded-md")}
                 language={match[1]}
                 style={vscDarkPlus} // theme
@@ -114,53 +105,10 @@ export function Markdown({
         details: ({ ...props }) => <details {...props} />,
         summary: ({ ...props }) => <summary {...props} />,
       }}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      rehypePlugins={[rehypeRaw as any, rehypeSanitize]}
+      rehypePlugins={[rehypeRaw, rehypeSanitize]}
       remarkPlugins={[removeHtmlComments, remarkGfm, ...(disableMentions ? [] : [userMentions])]}
     >
       {children}
     </ReactMarkdown>
-  );
-}
-
-function CopyButton({ text }: { text: string }) {
-  const [isCopied, setIsCopied] = useState(false);
-
-  const copyToClipboard = async () => {
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(text).catch(console.error);
-      setIsCopied(true);
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    }
-  };
-
-  return (
-    <div className="absolute right-0">
-      {isCopied ? (
-        <div className="flex items-center justify-center p-3">
-          <Check className="stroke-green-500 hover:stroke-green-400" size={20} />
-        </div>
-      ) : (
-        <div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={copyToClipboard}
-                variant="ghost"
-                className="p-2 hover:bg-transparent dark:hover:bg-transparent"
-                aria-label="Copy code to clipboard"
-              >
-                <Copy className="stroke-gray-500 hover:stroke-gray-400" size={20} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Copy</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      )}
-    </div>
   );
 }

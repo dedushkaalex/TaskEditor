@@ -14,7 +14,7 @@ const ChallengePage = () => {
   return (
     <main className="grow h-screen">
       <PanelGroup direction="horizontal">
-        <Panel defaultSize={30} minSize={20} className="border border-green-200 rounded-2xl">
+        <Panel defaultSize={30} minSize={20} className="bg-gray-700 rounded-2xl">
           <div className="overflow-y-auto h-full px-4">
             <Markdown>{mdContent}</Markdown>
           </div>
